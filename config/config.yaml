@@ -8,6 +8,12 @@ auto_spacing:
 slide:
   top_margin_inches: 0.5 # distance from top of slide to first content (0.5 best so far)
 
+# Screenshot: render the slide as a PNG image
+screenshot:
+  enabled: true
+  output_file: "output/hierarchy.png"
+  dpi: 150  # resolution (150 = good balance of quality and file size)
+
 # Input / Output paths
 input_file: "data/hierarchy_sample.xlsx"
 output_file: "output/hierarchy.pptx"

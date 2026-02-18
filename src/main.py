@@ -8,6 +8,7 @@ connectors always appear behind circles regardless of layout mode.
 import math
 import yaml
 import openpyxl
+from PIL import Image, ImageDraw, ImageFont
 from pptx import Presentation
 from pptx.util import Inches, Pt, Emu
 from pptx.dml.color import RGBColor
@@ -551,6 +552,115 @@ def build_slide(config, l1_to_agents, agent_to_tools, component_progress):
     output_path = ROOT_DIR / config["output_file"]
     output_path.parent.mkdir(parents=True, exist_ok=True)
     prs.save(str(output_path))
+    return output_path, all_connectors, all_circles, all_harvey_balls
+
+
+def _emu_to_px(emu, dpi):
+    """Convert EMU to pixels at the given DPI. 1 inch = 914400 EMU."""
+    return int(emu * dpi / 914400)
+
+
+def _rgb_to_tuple(rgb_color):
+    """Convert an RGBColor to an (R, G, B) tuple for Pillow."""
+    return (rgb_color[0], rgb_color[1], rgb_color[2])
+
+
+def render_png(config, all_connectors, all_circles, all_harvey_balls):
+    """Render the slide to a PNG image using Pillow."""
+    screenshot_cfg = config.get("screenshot", {})
+    if not screenshot_cfg.get("enabled", False):
+        return None
+
+    dpi = screenshot_cfg.get("dpi", 150)
+
+    # Standard slide dimensions: 10" x 7.5"
+    width_px = int(10 * dpi)
+    height_px = int(7.5 * dpi)
+
+    img = Image.new("RGB", (width_px, height_px), "white")
+    draw = ImageDraw.Draw(img)
+
+    # Draw connectors
+    for x1, y1, x2, y2, color, weight in all_connectors:
+        px1 = _emu_to_px(x1, dpi)
+        py1 = _emu_to_px(y1, dpi)
+        px2 = _emu_to_px(x2, dpi)
+        py2 = _emu_to_px(y2, dpi)
+        line_w = max(1, _emu_to_px(weight, dpi))
+        draw.line([(px1, py1), (px2, py2)], fill=_rgb_to_tuple(color), width=line_w)
+
+    # Draw circles
+    for cx, cy, style, text in all_circles:
+        size = style["size"]
+        r_px = _emu_to_px(size // 2, dpi)
+        cx_px = _emu_to_px(cx, dpi)
+        cy_px = _emu_to_px(cy, dpi)
+
+        fill = _rgb_to_tuple(style["fill_color"])
+        draw.ellipse(
+            [(cx_px - r_px, cy_px - r_px), (cx_px + r_px, cy_px + r_px)],
+            fill=fill, outline=(0, 0, 0), width=1,
+        )
+
+        # Text inside circle
+        abbrev = style.get("abbrev_chars", 0)
+        display_text = text[:abbrev] if abbrev > 0 and len(text) > abbrev else text
+        font_color = _rgb_to_tuple(style["font_color"])
+        font_size_px = max(8, _emu_to_px(style["font_size"], dpi))
+
+        try:
+            font = ImageFont.truetype("arial.ttf", font_size_px)
+        except (OSError, IOError):
+            try:
+                font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", font_size_px)
+            except (OSError, IOError):
+                font = ImageFont.load_default()
+
+        bbox = draw.textbbox((0, 0), display_text, font=font)
+        tw = bbox[2] - bbox[0]
+        th = bbox[3] - bbox[1]
+        draw.text((cx_px - tw // 2, cy_px - th // 2), display_text,
+                  fill=font_color, font=font)
+
+        # Label below circle if abbreviated
+        if abbrev > 0 and len(text) > abbrev:
+            label_size_px = max(6, font_size_px * 2 // 3)
+            try:
+                label_font = ImageFont.truetype("arial.ttf", label_size_px)
+            except (OSError, IOError):
+                try:
+                    label_font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", label_size_px)
+                except (OSError, IOError):
+                    label_font = ImageFont.load_default()
+            lbbox = draw.textbbox((0, 0), text, font=label_font)
+            lw = lbbox[2] - lbbox[0]
+            draw.text((cx_px - lw // 2, cy_px + r_px + 2), text,
+                      fill=font_color, font=label_font)
+
+    # Draw Harvey balls
+    for cx, cy, size, progress, oc, ow, fc, bg in all_harvey_balls:
+        hb_char = HARVEY_BALL_CHARS.get(progress, HARVEY_BALL_CHARS[0])
+        cx_px = _emu_to_px(cx, dpi)
+        cy_px = _emu_to_px(cy, dpi)
+        hb_font_size = max(6, _emu_to_px(int(size * 0.85), dpi))
+
+        try:
+            hb_font = ImageFont.truetype("arial.ttf", hb_font_size)
+        except (OSError, IOError):
+            try:
+                hb_font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", hb_font_size)
+            except (OSError, IOError):
+                hb_font = ImageFont.load_default()
+
+        bbox = draw.textbbox((0, 0), hb_char, font=hb_font)
+        tw = bbox[2] - bbox[0]
+        th = bbox[3] - bbox[1]
+        draw.text((cx_px - tw // 2, cy_px - th // 2), hb_char,
+                  fill=_rgb_to_tuple(fc), font=hb_font)
+
+    output_path = ROOT_DIR / screenshot_cfg["output_file"]
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    img.save(str(output_path), "PNG")
     return output_path
 
 
@@ -570,8 +680,13 @@ def main():
     for (ctype, cname), prog in component_progress.items():
         print(f"  {ctype}/{cname}: {prog}")
 
-    output = build_slide(config, l1_to_agents, agent_to_tools, component_progress)
+    output, all_connectors, all_circles, all_harvey_balls = build_slide(
+        config, l1_to_agents, agent_to_tools, component_progress)
     print(f"Saved to {output}")
+
+    png_path = render_png(config, all_connectors, all_circles, all_harvey_balls)
+    if png_path:
+        print(f"Screenshot saved to {png_path}")
 
 
 if __name__ == "__main__":
