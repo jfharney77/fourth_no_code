@@ -1,3 +1,13 @@
+# Auto-spacing: automatically increase orbit distances and cluster spacing
+# to prevent circle overlaps. Configured distances become minimums.
+auto_spacing:
+  enabled: true
+  padding_inches: 0.05 # extra gap between circles beyond touching
+
+# Slide layout
+slide:
+  top_margin_inches: 0.5 # distance from top of slide to first content (0.5 best so far)
+
 # Input / Output paths
 input_file: "data/hierarchy_sample.xlsx"
 output_file: "output/hierarchy.pptx"
@@ -14,7 +24,7 @@ sheets:
     agent_layout: "surrounding"
 
     # Distance between L1 center and Agent centers (inches) - used in surrounding mode
-    center_distance_inches: 0.75
+    center_distance_inches: 1.0
 
     # Circle appearance for distinct L1 values
     l1_circle:
@@ -52,7 +62,7 @@ sheets:
     tool_layout: "surrounding"
 
     # Distance between Agent center and Tool centers (inches) - used in surrounding mode
-    center_distance_inches: 0.5
+    center_distance_inches: 0.4
 
     # Connector line from Agent to Tool circles
     connector:
@@ -69,3 +79,21 @@ sheets:
       abbrev_chars: 3
       label_font_size: 5
       label_font_color: "000000"
+
+  Components:
+    # Which columns hold the data
+    header_row: 3
+    type_column: "B"
+    name_column: "C"
+    progress_column: "D"
+
+    # Harvey ball appearance
+    harvey_ball:
+      enabled: true                # set to false to hide harvey balls
+      size_inches: 0.12            # diameter of the harvey ball
+      offset_inches: 0.08          # distance from edge of circle to center of harvey ball
+      outline_color: "000000"      # border color (black)
+      outline_weight_pt: 0.75      # border thickness
+      fill_color: "2E75B6"         # filled portion color (medium blue)
+      background_color: "FFFFFF"   # empty portion color (white)
+      position: "bottom-right"     # where to place relative to circle
