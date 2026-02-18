@@ -1,0 +1,71 @@
+# Input / Output paths
+input_file: "data/hierarchy_sample.xlsx"
+output_file: "output/hierarchy.pptx"
+
+# Sheet settings
+sheets:
+  L12A:
+    # Which columns hold the data (1-indexed)
+    header_row: 2
+    l1_column: "B"
+    agents_column: "C"
+
+    # Agent layout: "surrounding" = orbit around L1, "bottom" = row at bottom
+    agent_layout: "surrounding"
+
+    # Distance between L1 center and Agent centers (inches) - used in surrounding mode
+    center_distance_inches: 0.75
+
+    # Circle appearance for distinct L1 values
+    l1_circle:
+      size_inches: 0.75
+      fill_color: "BDD7EE" # light blue (hex RGB)
+      font_size: 10
+      font_color: "000000" # black (hex RGB)
+      abbrev_chars: 3 # max chars shown inside circle (0 = full text, no label)
+      label_font_size: 7 # font size for label below circle
+      label_font_color: "000000"
+
+    # Connector line from L1 to Agent circles
+    connector:
+      enabled: false # set to false to hide connectors
+      color: "000000" # black (hex RGB)
+      weight_pt: 1.5 # line weight in points
+
+    # Circle appearance for distinct Agent values
+    agent_circle:
+      size_inches: 0.4
+      fill_color: "C6EFCE" # light green (hex RGB)
+      font_size: 8
+      font_color: "000000" # black (hex RGB)
+      abbrev_chars: 3 # max chars shown inside circle (0 = full text, no label)
+      label_font_size: 6 # font size for label below circle
+      label_font_color: "000000"
+
+  A2T:
+    # Which columns hold the data
+    header_row: 3
+    agents_column: "B"
+    tools_column: "C"
+
+    # Tool layout: "surrounding" = orbit around Agent, "top" = row at top
+    tool_layout: "surrounding"
+
+    # Distance between Agent center and Tool centers (inches) - used in surrounding mode
+    center_distance_inches: 0.5
+
+    # Connector line from Agent to Tool circles
+    connector:
+      enabled: true
+      color: "000000" # black (hex RGB)
+      weight_pt: 1 # line weight in points
+
+    # Circle appearance for distinct Tool values
+    tool_circle:
+      size_inches: 0.3
+      fill_color: "F8CBAD" # light orange (hex RGB)
+      font_size: 6
+      font_color: "000000"
+      abbrev_chars: 3
+      label_font_size: 5
+      label_font_color: "000000"
